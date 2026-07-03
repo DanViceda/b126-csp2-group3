@@ -7,6 +7,7 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import org.mindrot.jbcrypt.BCrypt;
 
 public class UserDao {
 
@@ -60,13 +61,16 @@ public class UserDao {
     public boolean addUser(User user) {
         String sql = "INSERT INTO users(first_name, last_name, email, password, phone_number) VALUES (?, ?, ?, ?, ?)";
 
+                                           //   use the previous getter and wrap here
+        String hashedPassword = BCrypt.hashpw(user.getPassword(), BCrypt.gensalt());
+
         try (Connection conn = DBConnection.getConnection();
              PreparedStatement pst = conn.prepareStatement(sql)) {
 
             pst.setString(1, user.getFirstName());
             pst.setString(2, user.getLastName());
             pst.setString(3, user.getEmail());
-            pst.setString(4, user.getPassword());
+            pst.setString(4, hashedPassword); // here the previous one
             pst.setString(5, user.getPhoneNumber());
 
             return pst.executeUpdate() > 0;
