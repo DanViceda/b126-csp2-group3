@@ -30,7 +30,7 @@ public class FeedingHistoryController {
                     break;
                 default:
                     System.out.println("Invalid choice. Please select from 1 to 3.");
-            }
+            }           
         }
     }
 

@@ -73,14 +73,15 @@ public class UserController {
     private void register() {
         System.out.println("\n========== REGISTER ==========");
 
-        String fullName = getValidName("Full Name: ");
+        String firstName = getValidName("First Name: ");
+        String lastName = getValidName("Last Name: ");
         String phoneNumber = getValidPhoneNumber("Phone Number: ");
         String email = getValidEmail("Email: ");
         String password = getValidPassword("Password: ");
 
         User user = new User();
-        user.setFirstName(fullName);
-        user.setLastName("");
+        user.setFirstName(firstName);
+        user.setLastName(lastName);
         user.setPhoneNumber(phoneNumber);
         user.setEmail(email);
         user.setPassword(password);
@@ -115,7 +116,7 @@ public class UserController {
                 return value;
             }
 
-            System.out.println("Full name must contain letters and spaces only.");
+            System.out.println("Name must contain letters and spaces only.");
         }
     }
 

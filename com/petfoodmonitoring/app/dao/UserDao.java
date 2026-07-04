@@ -21,16 +21,15 @@ public class UserDao {
     }
 
     public User login(String email, String password) {
-        String sql = "SELECT * FROM users WHERE email = ? AND password = ?";
+        String sql = "SELECT * FROM users WHERE email = ?";
 
         try (Connection conn = DBConnection.getConnection();
              PreparedStatement pst = conn.prepareStatement(sql)) {
 
             pst.setString(1, email);
-            pst.setString(2, password);
 
             try (ResultSet rs = pst.executeQuery()) {
-                if (rs.next()) {
+                if (rs.next() && BCrypt.checkpw(password, rs.getString("password"))) {
                     return mapUser(rs);
                 }
             }
