@@ -23,6 +23,11 @@ public class InputHelper {
         }
     }
 
+    public static String getOptionalString(String prompt) {
+        System.out.print(prompt);
+        return SCANNER.nextLine().trim();
+    }
+
     public static int getInt(String prompt) {
         while (true) {
             try {
@@ -34,6 +39,23 @@ public class InputHelper {
         }
     }
 
+    public static Integer getOptionalInt(String prompt) {
+        while (true) {
+            try {
+                System.out.print(prompt);
+                String value = SCANNER.nextLine().trim();
+
+                if (value.isEmpty()) {
+                    return null;
+                }
+
+                return Integer.parseInt(value);
+            } catch (NumberFormatException e) {
+                System.out.println("Please enter a valid whole number or press Enter to keep the current value.");
+            }
+        }
+    }
+
     public static double getDouble(String prompt) {
         while (true) {
             try {
@@ -41,6 +63,41 @@ public class InputHelper {
                 return Double.parseDouble(SCANNER.nextLine().trim());
             } catch (NumberFormatException e) {
                 System.out.println("Please enter a valid decimal number.");
+            }
+        }
+    }
+
+    public static double getPositiveDouble(String prompt) {
+        while (true) {
+            double value = getDouble(prompt);
+
+            if (value >= 0) {
+                return value;
+            }
+
+            System.out.println("Value cannot be negative. Please try again.");
+        }
+    }
+
+    public static Double getOptionalPositiveDouble(String prompt) {
+        while (true) {
+            try {
+                System.out.print(prompt);
+                String value = SCANNER.nextLine().trim();
+
+                if (value.isEmpty()) {
+                    return null;
+                }
+
+                double parsedValue = Double.parseDouble(value);
+
+                if (parsedValue >= 0) {
+                    return parsedValue;
+                }
+
+                System.out.println("Value cannot be negative. Please try again.");
+            } catch (NumberFormatException e) {
+                System.out.println("Please enter a valid decimal number or press Enter to keep the current value.");
             }
         }
     }
@@ -63,6 +120,23 @@ public class InputHelper {
                 return Date.valueOf(SCANNER.nextLine().trim());
             } catch (IllegalArgumentException e) {
                 System.out.println("Please enter a valid date using YYYY-MM-DD format.");
+            }
+        }
+    }
+
+    public static Date getOptionalDate(String prompt, Date currentValue) {
+        while (true) {
+            try {
+                System.out.print(prompt);
+                String value = SCANNER.nextLine().trim();
+
+                if (value.isEmpty()) {
+                    return currentValue;
+                }
+
+                return Date.valueOf(value);
+            } catch (IllegalArgumentException e) {
+                System.out.println("Please enter a valid date using YYYY-MM-DD format or press Enter to keep the current value.");
             }
         }
     }

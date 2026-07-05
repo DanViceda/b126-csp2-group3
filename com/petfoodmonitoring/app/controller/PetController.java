@@ -2,6 +2,7 @@ package com.petfoodmonitoring.app.controller;
 
 import com.petfoodmonitoring.app.dao.PetDao;
 import com.petfoodmonitoring.app.model.Pet;
+import com.petfoodmonitoring.app.utils.ConsoleHelper;
 import com.petfoodmonitoring.app.utils.InputHelper;
 import com.petfoodmonitoring.app.utils.Validator;
 
@@ -34,67 +35,114 @@ public class PetController {
                     InputHelper.clearScreen();
                     break;
                 default:
-                    System.out.println("Invalid choice. Please select from 1 to 5.");
+                    ConsoleHelper.error("Invalid choice. Please select from 1 to 5.");
             }
         }
     }
 
     private void showMenu() {
-        System.out.println("\n========== MANAGE PETS ==========");
-        System.out.println("1. Add Pet");
-        System.out.println("2. View Pets");
-        System.out.println("3. Update Pet");
-        System.out.println("4. Delete Pet");
-        System.out.println("5. Back");
+        ConsoleHelper.boxedMenu("MANAGE PETS", new String[]{
+            "1. Add Pet",
+            "2. View Pets",
+            "3. Update Pet",
+            "4. Delete Pet",
+            "5. Back"
+        });
     }
 
     private void addPet(int userId) {
+        ConsoleHelper.header("ADD PET");
         Pet pet = readPetDetails(userId);
 
         if (petDao.addPet(pet)) {
-            System.out.println("\nPet added successfully.");
+            ConsoleHelper.success("Pet added successfully.");
         } else {
-            System.out.println("\nPet was not added.");
+            ConsoleHelper.error("Pet was not added.");
         }
     }
 
     private void updatePet(int userId) {
+        ConsoleHelper.header("UPDATE PET");
         petDao.viewPets(userId);
-        Pet pet = readPetDetails(userId);
-        pet.setId(InputHelper.getInt("Enter Pet ID to update: "));
+        int id = InputHelper.getInt("Enter Pet ID to update: ");
+        Pet pet = petDao.findPetById(id, userId);
+
+        if (pet == null) {
+            ConsoleHelper.error("Pet not found.");
+            return;
+        }
+
+        System.out.println("\nPress Enter without typing anything to keep the current value.");
+        pet.setPetName(getOptionalText("Current Name: " + pet.getPetName(), "Enter New Name: ", pet.getPetName()));
+        pet.setSpecies(getOptionalText("Current Species: " + pet.getSpecies(), "Enter New Species: ", pet.getSpecies()));
+        pet.setBreed(getOptionalText("Current Breed: " + pet.getBreed(), "Enter New Breed: ", pet.getBreed()));
+        pet.setGender(getOptionalValidName("Current Gender: " + pet.getGender(), "Enter New Gender: ", pet.getGender()));
+        pet.setAge(getOptionalAge("Current Age: " + pet.getAge(), "Enter New Age: ", pet.getAge()));
+        pet.setWeight(getOptionalWeight("Current Weight: " + String.format("%.2f kg", pet.getWeight()), "Enter New Weight: ", pet.getWeight()));
 
         if (petDao.updatePet(pet)) {
-            System.out.println("\nPet updated successfully.");
+            ConsoleHelper.success("Pet updated successfully.");
         } else {
-            System.out.println("\nPet not found or update failed.");
+            ConsoleHelper.error("Pet not found or update failed.");
         }
     }
 
     private void deletePet(int userId) {
+        ConsoleHelper.header("DELETE PET");
         petDao.viewPets(userId);
         int id = InputHelper.getInt("Enter Pet ID to delete: ");
 
         if (InputHelper.getConfirmation("Delete this pet? (Y/N): ") && petDao.deletePet(id, userId)) {
-            System.out.println("\nPet deleted successfully.");
+            ConsoleHelper.success("Pet deleted successfully.");
         } else {
-            System.out.println("\nDelete operation was not completed.");
+            ConsoleHelper.info("Delete operation was not completed.");
         }
     }
 
     private Pet readPetDetails(int userId) {
         Pet pet = new Pet();
-        pet.setPetName(getRequiredText("Pet Name: "));
-        pet.setSpecies(getRequiredText("Species: "));
-        pet.setBreed(getRequiredText("Breed: "));
+        pet.setPetName(InputHelper.getString("Pet Name: "));
+        pet.setSpecies(InputHelper.getString("Species: "));
+        pet.setBreed(InputHelper.getString("Breed: "));
         pet.setGender(getValidName("Gender: "));
-        pet.setAge(InputHelper.getInt("Age: "));
-        pet.setWeight(InputHelper.getDouble("Weight: "));
+        pet.setAge(getValidAge("Age: "));
+        pet.setWeight(getPetWeight());
         pet.setUserId(userId);
         return pet;
     }
 
-    private String getRequiredText(String prompt) {
-        return InputHelper.getString(prompt);
+    private int getValidAge(String prompt) {
+        while (true) {
+            int age = InputHelper.getInt(prompt);
+
+            if (age >= 0) {
+                return age;
+            }
+
+            ConsoleHelper.error("Age cannot be negative.");
+        }
+    }
+
+    private double getPetWeight() {
+        printWeightGuide();
+        return InputHelper.getPositiveDouble("Enter Pet Weight: ");
+    }
+
+    private void printWeightGuide() {
+        System.out.println();
+        System.out.println("Enter Pet Weight (Kilograms only)");
+        System.out.println();
+        System.out.println("Examples:");
+        System.out.println("3");
+        System.out.println("3.5");
+        System.out.println("7.25");
+        System.out.println();
+        System.out.println("Do not include:");
+        System.out.println("kg");
+        System.out.println("lbs");
+        System.out.println("letters");
+        System.out.println("special characters");
+        System.out.println();
     }
 
     private String getValidName(String prompt) {
@@ -105,7 +153,54 @@ public class PetController {
                 return value;
             }
 
-            System.out.println("Use letters and spaces only.");
+            ConsoleHelper.error("Use letters and spaces only.");
         }
+    }
+
+    private String getOptionalText(String currentMessage, String prompt, String currentValue) {
+        System.out.println(currentMessage);
+        String value = InputHelper.getOptionalString(prompt + "(Press Enter to keep): ");
+        return value.isEmpty() ? currentValue : value;
+    }
+
+    private String getOptionalValidName(String currentMessage, String prompt, String currentValue) {
+        while (true) {
+            System.out.println(currentMessage);
+            String value = InputHelper.getOptionalString(prompt + "(Press Enter to keep): ");
+
+            if (value.isEmpty()) {
+                return currentValue;
+            }
+
+            if (Validator.isValidName(value)) {
+                return value;
+            }
+
+            ConsoleHelper.error("Use letters and spaces only.");
+        }
+    }
+
+    private int getOptionalAge(String currentMessage, String prompt, int currentValue) {
+        while (true) {
+            System.out.println(currentMessage);
+            Integer value = InputHelper.getOptionalInt(prompt + "(Press Enter to keep): ");
+
+            if (value == null) {
+                return currentValue;
+            }
+
+            if (value >= 0) {
+                return value;
+            }
+
+            ConsoleHelper.error("Age cannot be negative.");
+        }
+    }
+
+    private double getOptionalWeight(String currentMessage, String prompt, double currentValue) {
+        printWeightGuide();
+        System.out.println(currentMessage);
+        Double value = InputHelper.getOptionalPositiveDouble(prompt + "(Press Enter to keep): ");
+        return value == null ? currentValue : value;
     }
 }

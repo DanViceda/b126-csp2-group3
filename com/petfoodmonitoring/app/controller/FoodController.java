@@ -2,6 +2,7 @@ package com.petfoodmonitoring.app.controller;
 
 import com.petfoodmonitoring.app.dao.PetFoodDao;
 import com.petfoodmonitoring.app.model.PetFood;
+import com.petfoodmonitoring.app.utils.ConsoleHelper;
 import com.petfoodmonitoring.app.utils.InputHelper;
 
 public class FoodController {
@@ -33,48 +34,66 @@ public class FoodController {
                     InputHelper.clearScreen();
                     break;
                 default:
-                    System.out.println("Invalid choice. Please select from 1 to 5.");
+                    ConsoleHelper.error("Invalid choice. Please select from 1 to 5.");
             }
         }
     }
 
     private void showMenu() {
-        System.out.println("\n========== MANAGE FOOD ==========");
-        System.out.println("1. Add Food");
-        System.out.println("2. View Food");
-        System.out.println("3. Update Food");
-        System.out.println("4. Delete Food");
-        System.out.println("5. Back");
+        ConsoleHelper.boxedMenu("MANAGE FOOD", new String[]{
+            "1. Add Food",
+            "2. View Food",
+            "3. Update Food",
+            "4. Delete Food",
+            "5. Back"
+        });
     }
 
     private void addFood() {
+        ConsoleHelper.header("ADD FOOD");
+
         if (foodDao.addFood(readFoodDetails())) {
-            System.out.println("\nFood added successfully.");
+            ConsoleHelper.success("Food added successfully.");
         } else {
-            System.out.println("\nFood was not added.");
+            ConsoleHelper.error("Food was not added.");
         }
     }
 
     private void updateFood() {
+        ConsoleHelper.header("UPDATE FOOD");
         foodDao.viewFoods();
-        PetFood food = readFoodDetails();
-        food.setId(InputHelper.getInt("Enter Food ID to update: "));
+        int id = InputHelper.getInt("Enter Food ID to update: ");
+        PetFood food = foodDao.findFoodById(id);
+
+        if (food == null) {
+            ConsoleHelper.error("Food not found.");
+            return;
+        }
+
+        System.out.println("\nPress Enter without typing anything to keep the current value.");
+        food.setFoodName(getOptionalText("Current Food Name: " + food.getFoodName(), "Enter New Food Name: ", food.getFoodName()));
+        food.setBrand(getOptionalText("Current Brand: " + food.getBrand(), "Enter New Brand: ", food.getBrand()));
+        food.setFoodType(getOptionalText("Current Type: " + food.getFoodType(), "Enter New Type: ", food.getFoodType()));
+        food.setFlavor(getOptionalText("Current Flavor: " + food.getFlavor(), "Enter New Flavor: ", food.getFlavor()));
+        System.out.println("Current Expiration Date: " + food.getExpirationDate());
+        food.setExpirationDate(InputHelper.getOptionalDate("Enter New Expiration Date (YYYY-MM-DD, Press Enter to keep): ", food.getExpirationDate()));
 
         if (foodDao.updateFood(food)) {
-            System.out.println("\nFood updated successfully.");
+            ConsoleHelper.success("Food updated successfully.");
         } else {
-            System.out.println("\nFood not found or update failed.");
+            ConsoleHelper.error("Food not found or update failed.");
         }
     }
 
     private void deleteFood() {
+        ConsoleHelper.header("DELETE FOOD");
         foodDao.viewFoods();
         int id = InputHelper.getInt("Enter Food ID to delete: ");
 
         if (InputHelper.getConfirmation("Delete this food? (Y/N): ") && foodDao.deleteFood(id)) {
-            System.out.println("\nFood deleted successfully.");
+            ConsoleHelper.success("Food deleted successfully.");
         } else {
-            System.out.println("\nDelete operation was not completed.");
+            ConsoleHelper.info("Delete operation was not completed.");
         }
     }
 
@@ -86,5 +105,11 @@ public class FoodController {
         food.setFlavor(InputHelper.getString("Flavor: "));
         food.setExpirationDate(InputHelper.getDate("Expiration Date (YYYY-MM-DD): "));
         return food;
+    }
+
+    private String getOptionalText(String currentMessage, String prompt, String currentValue) {
+        System.out.println(currentMessage);
+        String value = InputHelper.getOptionalString(prompt + "(Press Enter to keep): ");
+        return value.isEmpty() ? currentValue : value;
     }
 }

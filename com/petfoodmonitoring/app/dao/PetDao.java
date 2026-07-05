@@ -2,11 +2,15 @@ package com.petfoodmonitoring.app.dao;
 
 import com.petfoodmonitoring.app.config.DBConnection;
 import com.petfoodmonitoring.app.model.Pet;
+import com.petfoodmonitoring.app.utils.ConsoleHelper;
+import com.petfoodmonitoring.app.utils.TablePrinter;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.List;
 
 public class PetDao {
 
@@ -19,13 +23,14 @@ public class PetDao {
             setPetValues(pst, pet);
             return pst.executeUpdate() > 0;
         } catch (SQLException | NullPointerException e) {
-            System.out.println("Failed to add pet: " + e.getMessage());
+            ConsoleHelper.error("Failed to add pet: " + e.getMessage());
             return false;
         }
     }
 
     public void viewPets(int userId) {
-        String sql = "SELECT * FROM pets WHERE user_id = ?";
+        String sql = "SELECT * FROM pets WHERE user_id = ? ORDER BY id";
+        List<String[]> rows = new ArrayList<>();
 
         try (Connection conn = DBConnection.getConnection();
              PreparedStatement pst = conn.prepareStatement(sql)) {
@@ -33,14 +38,45 @@ public class PetDao {
             pst.setInt(1, userId);
 
             try (ResultSet rs = pst.executeQuery()) {
-                System.out.println("\n========== PETS ==========");
                 while (rs.next()) {
-                    printPet(rs);
+                    rows.add(new String[]{
+                        String.valueOf(rs.getInt("id")),
+                        rs.getString("pet_name"),
+                        rs.getString("species"),
+                        rs.getString("breed"),
+                        rs.getString("gender"),
+                        String.valueOf(rs.getInt("age")),
+                        String.format("%.2f kg", rs.getDouble("weight"))
+                    });
+                }
+            }
+
+            ConsoleHelper.header("PET LIST");
+            TablePrinter.print(new String[]{"ID", "Name", "Species", "Breed", "Gender", "Age", "Weight"}, rows);
+        } catch (SQLException | NullPointerException e) {
+            ConsoleHelper.error("Failed to view pets: " + e.getMessage());
+        }
+    }
+
+    public Pet findPetById(int id, int userId) {
+        String sql = "SELECT * FROM pets WHERE id = ? AND user_id = ?";
+
+        try (Connection conn = DBConnection.getConnection();
+             PreparedStatement pst = conn.prepareStatement(sql)) {
+
+            pst.setInt(1, id);
+            pst.setInt(2, userId);
+
+            try (ResultSet rs = pst.executeQuery()) {
+                if (rs.next()) {
+                    return mapPet(rs);
                 }
             }
         } catch (SQLException | NullPointerException e) {
-            System.out.println("Failed to view pets: " + e.getMessage());
+            ConsoleHelper.error("Failed to find pet: " + e.getMessage());
         }
+
+        return null;
     }
 
     public boolean updatePet(Pet pet) {
@@ -60,7 +96,7 @@ public class PetDao {
 
             return pst.executeUpdate() > 0;
         } catch (SQLException | NullPointerException e) {
-            System.out.println("Failed to update pet: " + e.getMessage());
+            ConsoleHelper.error("Failed to update pet: " + e.getMessage());
             return false;
         }
     }
@@ -75,7 +111,7 @@ public class PetDao {
             pst.setInt(2, userId);
             return pst.executeUpdate() > 0;
         } catch (SQLException | NullPointerException e) {
-            System.out.println("Failed to delete pet: " + e.getMessage());
+            ConsoleHelper.error("Failed to delete pet: " + e.getMessage());
             return false;
         }
     }
@@ -90,14 +126,16 @@ public class PetDao {
         pst.setInt(7, pet.getUserId());
     }
 
-    private void printPet(ResultSet rs) throws SQLException {
-        System.out.println("ID: " + rs.getInt("id"));
-        System.out.println("Pet Name: " + rs.getString("pet_name"));
-        System.out.println("Species: " + rs.getString("species"));
-        System.out.println("Breed: " + rs.getString("breed"));
-        System.out.println("Gender: " + rs.getString("gender"));
-        System.out.println("Age: " + rs.getInt("age"));
-        System.out.println("Weight: " + rs.getDouble("weight"));
-        System.out.println("------------------------------");
+    private Pet mapPet(ResultSet rs) throws SQLException {
+        return new Pet(
+                rs.getInt("id"),
+                rs.getString("pet_name"),
+                rs.getString("species"),
+                rs.getString("breed"),
+                rs.getInt("age"),
+                rs.getDouble("weight"),
+                rs.getString("gender"),
+                rs.getInt("user_id")
+        );
     }
 }

@@ -2,6 +2,7 @@ package com.petfoodmonitoring.app.controller;
 
 import com.petfoodmonitoring.app.dao.UserDao;
 import com.petfoodmonitoring.app.model.User;
+import com.petfoodmonitoring.app.utils.ConsoleHelper;
 import com.petfoodmonitoring.app.utils.InputHelper;
 import com.petfoodmonitoring.app.utils.Validator;
 
@@ -36,19 +37,18 @@ public class UserController {
                     }
                     break;
                 default:
-                    System.out.println("Invalid choice. Please select from 1 to 4.");
+                    ConsoleHelper.error("Invalid choice. Please select from 1 to 4.");
             }
         }
     }
 
     private void showMainMenu() {
-        System.out.println("\n=============================");
-        System.out.println(" PET FOOD MONITORING APP");
-        System.out.println("=============================");
-        System.out.println("1. Start Application");
-        System.out.println("2. Register");
-        System.out.println("3. Login");
-        System.out.println("4. Exit");
+        ConsoleHelper.boxedMenu("PET FOOD MONITORING APP", new String[]{
+            "1. Start Application",
+            "2. Register",
+            "3. Login",
+            "4. Exit"
+        });
     }
 
     private void showWelcomeScreen() {
@@ -71,7 +71,7 @@ public class UserController {
     }
 
     private void register() {
-        System.out.println("\n========== REGISTER ==========");
+        ConsoleHelper.header("REGISTER");
 
         String firstName = getValidName("First Name: ");
         String lastName = getValidName("Last Name: ");
@@ -94,7 +94,7 @@ public class UserController {
     }
 
     private void login() {
-        System.out.println("\n========== LOGIN ==========");
+        ConsoleHelper.header("LOGIN");
         String email = InputHelper.getString("Email: ");
         String password = InputHelper.getString("Password: ");
 

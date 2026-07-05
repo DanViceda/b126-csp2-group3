@@ -2,11 +2,15 @@ package com.petfoodmonitoring.app.dao;
 
 import com.petfoodmonitoring.app.config.DBConnection;
 import com.petfoodmonitoring.app.model.FeedingHistory;
+import com.petfoodmonitoring.app.utils.ConsoleHelper;
+import com.petfoodmonitoring.app.utils.TablePrinter;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.List;
 
 public class FeedingHistoryDao {
 
@@ -23,7 +27,7 @@ public class FeedingHistoryDao {
             pst.setString(5, history.getRemarks());
             return pst.executeUpdate() > 0;
         } catch (SQLException | NullPointerException e) {
-            System.out.println("Failed to add feeding history: " + e.getMessage());
+            ConsoleHelper.error("Failed to add feeding history: " + e.getMessage());
             return false;
         }
     }
@@ -34,7 +38,8 @@ public class FeedingHistoryDao {
                 + "LEFT JOIN schedule s ON h.schedule_id = s.id "
                 + "LEFT JOIN pets p ON s.pet_id = p.id "
                 + "LEFT JOIN food f ON s.food_id = f.id "
-                + "WHERE p.user_id = ?";
+                + "WHERE p.user_id = ? ORDER BY h.feeding_date DESC, h.id DESC";
+        List<String[]> rows = new ArrayList<>();
 
         try (Connection conn = DBConnection.getConnection();
              PreparedStatement pst = conn.prepareStatement(sql)) {
@@ -42,24 +47,23 @@ public class FeedingHistoryDao {
             pst.setInt(1, userId);
 
             try (ResultSet rs = pst.executeQuery()) {
-                System.out.println("\n========== FEEDING HISTORY ==========");
                 while (rs.next()) {
-                    printHistory(rs);
+                    rows.add(new String[]{
+                        String.valueOf(rs.getInt("id")),
+                        rs.getString("pet_name"),
+                        rs.getString("food_name"),
+                        String.valueOf(rs.getDate("feeding_date")),
+                        rs.getString("feeding_time"),
+                        rs.getString("status"),
+                        rs.getString("remarks")
+                    });
                 }
             }
-        } catch (SQLException | NullPointerException e) {
-            System.out.println("Failed to view feeding history: " + e.getMessage());
-        }
-    }
 
-    private void printHistory(ResultSet rs) throws SQLException {
-        System.out.println("ID: " + rs.getInt("id"));
-        System.out.println("Pet: " + rs.getString("pet_name"));
-        System.out.println("Food: " + rs.getString("food_name"));
-        System.out.println("Feeding Date: " + rs.getDate("feeding_date"));
-        System.out.println("Feeding Time: " + rs.getString("feeding_time"));
-        System.out.println("Status: " + rs.getString("status"));
-        System.out.println("Remarks: " + rs.getString("remarks"));
-        System.out.println("------------------------------");
+            ConsoleHelper.header("FEEDING HISTORY");
+            TablePrinter.print(new String[]{"ID", "Pet", "Food", "Date", "Time", "Status", "Remarks"}, rows);
+        } catch (SQLException | NullPointerException e) {
+            ConsoleHelper.error("Failed to view feeding history: " + e.getMessage());
+        }
     }
 }

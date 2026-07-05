@@ -2,11 +2,15 @@ package com.petfoodmonitoring.app.dao;
 
 import com.petfoodmonitoring.app.config.DBConnection;
 import com.petfoodmonitoring.app.model.PetFood;
+import com.petfoodmonitoring.app.utils.ConsoleHelper;
+import com.petfoodmonitoring.app.utils.TablePrinter;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.List;
 
 public class PetFoodDao {
 
@@ -19,25 +23,55 @@ public class PetFoodDao {
             setFoodValues(pst, food);
             return pst.executeUpdate() > 0;
         } catch (SQLException | NullPointerException e) {
-            System.out.println("Failed to add food: " + e.getMessage());
+            ConsoleHelper.error("Failed to add food: " + e.getMessage());
             return false;
         }
     }
 
     public void viewFoods() {
-        String sql = "SELECT * FROM food";
+        String sql = "SELECT * FROM food ORDER BY id";
+        List<String[]> rows = new ArrayList<>();
 
         try (Connection conn = DBConnection.getConnection();
              PreparedStatement pst = conn.prepareStatement(sql);
              ResultSet rs = pst.executeQuery()) {
 
-            System.out.println("\n========== PET FOOD ==========");
             while (rs.next()) {
-                printFood(rs);
+                rows.add(new String[]{
+                    String.valueOf(rs.getInt("id")),
+                    rs.getString("food_name"),
+                    rs.getString("brand"),
+                    rs.getString("type"),
+                    rs.getString("flavor"),
+                    String.valueOf(rs.getDate("expiration_date"))
+                });
+            }
+
+            ConsoleHelper.header("PET FOOD LIST");
+            TablePrinter.print(new String[]{"ID", "Food Name", "Brand", "Type", "Flavor", "Expiration"}, rows);
+        } catch (SQLException | NullPointerException e) {
+            ConsoleHelper.error("Failed to view food: " + e.getMessage());
+        }
+    }
+
+    public PetFood findFoodById(int id) {
+        String sql = "SELECT * FROM food WHERE id = ?";
+
+        try (Connection conn = DBConnection.getConnection();
+             PreparedStatement pst = conn.prepareStatement(sql)) {
+
+            pst.setInt(1, id);
+
+            try (ResultSet rs = pst.executeQuery()) {
+                if (rs.next()) {
+                    return mapFood(rs);
+                }
             }
         } catch (SQLException | NullPointerException e) {
-            System.out.println("Failed to view food: " + e.getMessage());
+            ConsoleHelper.error("Failed to find food: " + e.getMessage());
         }
+
+        return null;
     }
 
     public boolean updateFood(PetFood food) {
@@ -50,7 +84,7 @@ public class PetFoodDao {
             pst.setInt(6, food.getId());
             return pst.executeUpdate() > 0;
         } catch (SQLException | NullPointerException e) {
-            System.out.println("Failed to update food: " + e.getMessage());
+            ConsoleHelper.error("Failed to update food: " + e.getMessage());
             return false;
         }
     }
@@ -64,7 +98,7 @@ public class PetFoodDao {
             pst.setInt(1, id);
             return pst.executeUpdate() > 0;
         } catch (SQLException | NullPointerException e) {
-            System.out.println("Failed to delete food: " + e.getMessage());
+            ConsoleHelper.error("Failed to delete food: " + e.getMessage());
             return false;
         }
     }
@@ -77,13 +111,14 @@ public class PetFoodDao {
         pst.setDate(5, food.getExpirationDate());
     }
 
-    private void printFood(ResultSet rs) throws SQLException {
-        System.out.println("ID: " + rs.getInt("id"));
-        System.out.println("Food Name: " + rs.getString("food_name"));
-        System.out.println("Brand: " + rs.getString("brand"));
-        System.out.println("Type: " + rs.getString("type"));
-        System.out.println("Flavor: " + rs.getString("flavor"));
-        System.out.println("Expiration Date: " + rs.getDate("expiration_date"));
-        System.out.println("------------------------------");
+    private PetFood mapFood(ResultSet rs) throws SQLException {
+        return new PetFood(
+                rs.getInt("id"),
+                rs.getString("food_name"),
+                rs.getString("brand"),
+                rs.getString("type"),
+                rs.getString("flavor"),
+                rs.getDate("expiration_date")
+        );
     }
 }

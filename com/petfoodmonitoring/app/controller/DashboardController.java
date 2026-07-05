@@ -1,6 +1,7 @@
 package com.petfoodmonitoring.app.controller;
 
 import com.petfoodmonitoring.app.model.User;
+import com.petfoodmonitoring.app.utils.ConsoleHelper;
 import com.petfoodmonitoring.app.utils.InputHelper;
 
 public class DashboardController {
@@ -40,20 +41,19 @@ public class DashboardController {
                     System.out.println("You have been logged out.");
                     break;
                 default:
-                    System.out.println("Invalid choice. Please select from 1 to 6.");
+                    ConsoleHelper.error("Invalid choice. Please select from 1 to 6.");
             }
         }
     }
 
     private void showDashboard() {
-        System.out.println("\n=============================");
-        System.out.println("Dashboard");
-        System.out.println("=============================");
-        System.out.println("1. Manage Pets");
-        System.out.println("2. Manage Food");
-        System.out.println("3. Food Inventory");
-        System.out.println("4. Feeding Schedule");
-        System.out.println("5. Feeding History");
-        System.out.println("6. Logout");
+        ConsoleHelper.boxedMenu("DASHBOARD", new String[]{
+            "1. Manage Pets",
+            "2. Manage Food",
+            "3. Food Inventory",
+            "4. Feeding Schedule",
+            "5. Feeding History",
+            "6. Logout"
+        });
     }
 }

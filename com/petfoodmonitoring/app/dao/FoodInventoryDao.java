@@ -2,12 +2,16 @@ package com.petfoodmonitoring.app.dao;
 
 import com.petfoodmonitoring.app.config.DBConnection;
 import com.petfoodmonitoring.app.model.FoodInventory;
+import com.petfoodmonitoring.app.utils.ConsoleHelper;
+import com.petfoodmonitoring.app.utils.TablePrinter;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Timestamp;
+import java.util.ArrayList;
+import java.util.List;
 
 public class FoodInventoryDao {
 
@@ -20,25 +24,74 @@ public class FoodInventoryDao {
             setInventoryValues(pst, inventory);
             return pst.executeUpdate() > 0;
         } catch (SQLException | NullPointerException e) {
-            System.out.println("Failed to add inventory: " + e.getMessage());
+            ConsoleHelper.error("Failed to add inventory: " + e.getMessage());
             return false;
         }
     }
 
     public void viewInventory() {
-        String sql = "SELECT i.*, f.food_name FROM inventory i LEFT JOIN food f ON i.food_id = f.id";
+        String sql = "SELECT i.*, f.food_name, f.brand FROM inventory i LEFT JOIN food f ON i.food_id = f.id ORDER BY i.id";
+        List<String[]> rows = new ArrayList<>();
 
         try (Connection conn = DBConnection.getConnection();
              PreparedStatement pst = conn.prepareStatement(sql);
              ResultSet rs = pst.executeQuery()) {
 
-            System.out.println("\n========== FOOD INVENTORY ==========");
             while (rs.next()) {
-                printInventory(rs);
+                rows.add(new String[]{
+                    String.valueOf(rs.getInt("id")),
+                    rs.getString("food_name"),
+                    formatQuantity(rs.getDouble("quantity_available"), rs.getString("unit")),
+                    rs.getString("unit"),
+                    rs.getString("brand")
+                });
+            }
+
+            ConsoleHelper.header("FOOD INVENTORY");
+            TablePrinter.print(new String[]{"ID", "Food Name", "Quantity", "Unit", "Brand"}, rows);
+        } catch (SQLException | NullPointerException e) {
+            ConsoleHelper.error("Failed to view inventory: " + e.getMessage());
+        }
+    }
+
+    public FoodInventory findInventoryById(int id) {
+        String sql = "SELECT * FROM inventory WHERE id = ?";
+
+        try (Connection conn = DBConnection.getConnection();
+             PreparedStatement pst = conn.prepareStatement(sql)) {
+
+            pst.setInt(1, id);
+
+            try (ResultSet rs = pst.executeQuery()) {
+                if (rs.next()) {
+                    return mapInventory(rs);
+                }
             }
         } catch (SQLException | NullPointerException e) {
-            System.out.println("Failed to view inventory: " + e.getMessage());
+            ConsoleHelper.error("Failed to find inventory: " + e.getMessage());
         }
+
+        return null;
+    }
+
+    public FoodInventory findInventoryByFoodId(int foodId) {
+        String sql = "SELECT * FROM inventory WHERE food_id = ? ORDER BY id LIMIT 1";
+
+        try (Connection conn = DBConnection.getConnection();
+             PreparedStatement pst = conn.prepareStatement(sql)) {
+
+            pst.setInt(1, foodId);
+
+            try (ResultSet rs = pst.executeQuery()) {
+                if (rs.next()) {
+                    return mapInventory(rs);
+                }
+            }
+        } catch (SQLException | NullPointerException e) {
+            ConsoleHelper.error("Failed to find inventory by food: " + e.getMessage());
+        }
+
+        return null;
     }
 
     public boolean updateInventory(FoodInventory inventory) {
@@ -51,7 +104,7 @@ public class FoodInventoryDao {
             pst.setInt(5, inventory.getId());
             return pst.executeUpdate() > 0;
         } catch (SQLException | NullPointerException e) {
-            System.out.println("Failed to update inventory: " + e.getMessage());
+            ConsoleHelper.error("Failed to update inventory: " + e.getMessage());
             return false;
         }
     }
@@ -67,7 +120,7 @@ public class FoodInventoryDao {
             pst.setInt(3, id);
             return pst.executeUpdate() > 0;
         } catch (SQLException | NullPointerException e) {
-            System.out.println("Failed to update stock: " + e.getMessage());
+            ConsoleHelper.error("Failed to update stock: " + e.getMessage());
             return false;
         }
     }
@@ -81,7 +134,7 @@ public class FoodInventoryDao {
             pst.setInt(1, id);
             return pst.executeUpdate() > 0;
         } catch (SQLException | NullPointerException e) {
-            System.out.println("Failed to delete inventory: " + e.getMessage());
+            ConsoleHelper.error("Failed to delete inventory: " + e.getMessage());
             return false;
         }
     }
@@ -93,12 +146,21 @@ public class FoodInventoryDao {
         pst.setTimestamp(4, inventory.getLastUpdated());
     }
 
-    private void printInventory(ResultSet rs) throws SQLException {
-        System.out.println("ID: " + rs.getInt("id"));
-        System.out.println("Food: " + rs.getString("food_name"));
-        System.out.println("Quantity Available: " + rs.getDouble("quantity_available"));
-        System.out.println("Unit: " + rs.getString("unit"));
-        System.out.println("Last Updated: " + rs.getTimestamp("last_updated"));
-        System.out.println("------------------------------");
+    private String formatQuantity(double quantity, String unit) {
+        if (unit != null && unit.equalsIgnoreCase("pcs")) {
+            return String.format("%.0f", quantity);
+        }
+
+        return String.format("%.2f", quantity);
+    }
+
+    private FoodInventory mapInventory(ResultSet rs) throws SQLException {
+        return new FoodInventory(
+                rs.getInt("id"),
+                rs.getDouble("quantity_available"),
+                rs.getString("unit"),
+                rs.getTimestamp("last_updated"),
+                rs.getInt("food_id")
+        );
     }
 }

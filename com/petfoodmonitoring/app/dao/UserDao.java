@@ -7,6 +7,10 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.List;
+import com.petfoodmonitoring.app.utils.ConsoleHelper;
+import com.petfoodmonitoring.app.utils.TablePrinter;
 import org.mindrot.jbcrypt.BCrypt;
 
 public class UserDao {
@@ -80,18 +84,25 @@ public class UserDao {
     }
 
     public void viewUsers() {
-        String sql = "SELECT * FROM users";
+        String sql = "SELECT * FROM users ORDER BY id";
+        List<String[]> rows = new ArrayList<>();
 
         try (Connection conn = DBConnection.getConnection();
              PreparedStatement pst = conn.prepareStatement(sql);
              ResultSet rs = pst.executeQuery()) {
 
-            System.out.println("\n========== USERS ==========");
-
             while (rs.next()) {
-                printUser(rs);
-                System.out.println("------------------------------");
+                rows.add(new String[]{
+                    String.valueOf(rs.getInt("id")),
+                    rs.getString("first_name"),
+                    rs.getString("last_name"),
+                    rs.getString("email"),
+                    rs.getString("phone_number")
+                });
             }
+
+            ConsoleHelper.header("REGISTERED USERS");
+            TablePrinter.print(new String[]{"ID", "First Name", "Last Name", "Email", "Phone"}, rows);
         } catch (SQLException | NullPointerException e) {
             System.out.println("Failed to view users: " + e.getMessage());
         }
