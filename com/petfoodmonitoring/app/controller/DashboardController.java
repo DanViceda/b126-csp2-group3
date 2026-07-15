@@ -24,10 +24,10 @@ public class DashboardController {
                     petController.start(user.getId());
                     break;
                 case 2:
-                    foodController.start();
+                    foodController.start(user.getId());
                     break;
                 case 3:
-                    inventoryController.start();
+                    inventoryController.start(user.getId());
                     break;
                 case 4:
                     scheduleController.start(user.getId());

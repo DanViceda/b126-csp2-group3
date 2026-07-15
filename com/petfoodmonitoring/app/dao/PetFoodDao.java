@@ -15,12 +15,13 @@ import java.util.List;
 public class PetFoodDao {
 
     public boolean addFood(PetFood food) {
-        String sql = "INSERT INTO food(food_name, brand, `type`, flavor, expiration_date) VALUES (?, ?, ?, ?, ?)";
+        String sql = "INSERT INTO food(food_name, brand, `type`, flavor, expiration_date, user_id) VALUES (?, ?, ?, ?, ?, ?)";
 
         try (Connection conn = DBConnection.getConnection();
              PreparedStatement pst = conn.prepareStatement(sql)) {
 
             setFoodValues(pst, food);
+            pst.setInt(6, food.getUserId());
             return pst.executeUpdate() > 0;
         } catch (SQLException | NullPointerException e) {
             ConsoleHelper.error("Failed to add food: " + e.getMessage());
@@ -28,23 +29,26 @@ public class PetFoodDao {
         }
     }
 
-    public void viewFoods() {
-        String sql = "SELECT * FROM food ORDER BY id";
+    public void viewFoods(int userId) {
+        String sql = "SELECT * FROM food WHERE user_id = ? ORDER BY id";
         List<String[]> rows = new ArrayList<>();
 
         try (Connection conn = DBConnection.getConnection();
-             PreparedStatement pst = conn.prepareStatement(sql);
-             ResultSet rs = pst.executeQuery()) {
+             PreparedStatement pst = conn.prepareStatement(sql)) {
 
-            while (rs.next()) {
-                rows.add(new String[]{
-                    String.valueOf(rs.getInt("id")),
-                    rs.getString("food_name"),
-                    rs.getString("brand"),
-                    rs.getString("type"),
-                    rs.getString("flavor"),
-                    String.valueOf(rs.getDate("expiration_date"))
-                });
+            pst.setInt(1, userId);
+
+            try (ResultSet rs = pst.executeQuery()) {
+                while (rs.next()) {
+                    rows.add(new String[]{
+                            String.valueOf(rs.getInt("id")),
+                            rs.getString("food_name"),
+                            rs.getString("brand"),
+                            rs.getString("type"),
+                            rs.getString("flavor"),
+                            String.valueOf(rs.getDate("expiration_date"))
+                    });
+                }
             }
 
             ConsoleHelper.header("PET FOOD LIST");
@@ -54,13 +58,14 @@ public class PetFoodDao {
         }
     }
 
-    public PetFood findFoodById(int id) {
-        String sql = "SELECT * FROM food WHERE id = ?";
+    public PetFood findFoodById(int id, int userId) {
+        String sql = "SELECT * FROM food WHERE id = ? AND user_id = ?";
 
         try (Connection conn = DBConnection.getConnection();
              PreparedStatement pst = conn.prepareStatement(sql)) {
 
             pst.setInt(1, id);
+            pst.setInt(2, userId);
 
             try (ResultSet rs = pst.executeQuery()) {
                 if (rs.next()) {
@@ -75,13 +80,14 @@ public class PetFoodDao {
     }
 
     public boolean updateFood(PetFood food) {
-        String sql = "UPDATE food SET food_name=?, brand=?, `type`=?, flavor=?, expiration_date=? WHERE id=?";
+        String sql = "UPDATE food SET food_name=?, brand=?, `type`=?, flavor=?, expiration_date=? WHERE id=? AND user_id=?";
 
         try (Connection conn = DBConnection.getConnection();
              PreparedStatement pst = conn.prepareStatement(sql)) {
 
             setFoodValues(pst, food);
             pst.setInt(6, food.getId());
+            pst.setInt(7, food.getUserId());
             return pst.executeUpdate() > 0;
         } catch (SQLException | NullPointerException e) {
             ConsoleHelper.error("Failed to update food: " + e.getMessage());
@@ -89,13 +95,14 @@ public class PetFoodDao {
         }
     }
 
-    public boolean deleteFood(int id) {
-        String sql = "DELETE FROM food WHERE id = ?";
+    public boolean deleteFood(int id, int userId) {
+        String sql = "DELETE FROM food WHERE id = ? AND user_id = ?";
 
         try (Connection conn = DBConnection.getConnection();
              PreparedStatement pst = conn.prepareStatement(sql)) {
 
             pst.setInt(1, id);
+            pst.setInt(2, userId);
             return pst.executeUpdate() > 0;
         } catch (SQLException | NullPointerException e) {
             ConsoleHelper.error("Failed to delete food: " + e.getMessage());
@@ -118,7 +125,8 @@ public class PetFoodDao {
                 rs.getString("brand"),
                 rs.getString("type"),
                 rs.getString("flavor"),
-                rs.getDate("expiration_date")
+                rs.getDate("expiration_date"),
+                rs.getInt("user_id")
         );
     }
 }

@@ -38,13 +38,14 @@ public class FeedingHistoryDao {
                 + "LEFT JOIN schedule s ON h.schedule_id = s.id "
                 + "LEFT JOIN pets p ON s.pet_id = p.id "
                 + "LEFT JOIN food f ON s.food_id = f.id "
-                + "WHERE p.user_id = ? ORDER BY h.feeding_date DESC, h.id DESC";
+                + "WHERE p.user_id = ? AND f.user_id = ? ORDER BY h.feeding_date DESC, h.id DESC";
         List<String[]> rows = new ArrayList<>();
 
         try (Connection conn = DBConnection.getConnection();
              PreparedStatement pst = conn.prepareStatement(sql)) {
 
             pst.setInt(1, userId);
+            pst.setInt(2, userId);
 
             try (ResultSet rs = pst.executeQuery()) {
                 while (rs.next()) {

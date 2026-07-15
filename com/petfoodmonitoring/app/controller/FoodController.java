@@ -9,7 +9,7 @@ public class FoodController {
 
     private final PetFoodDao foodDao = new PetFoodDao();
 
-    public void start() {
+    public void start(int userId) {
         boolean running = true;
 
         while (running) {
@@ -18,16 +18,16 @@ public class FoodController {
 
             switch (choice) {
                 case 1:
-                    addFood();
+                    addFood(userId);
                     break;
                 case 2:
-                    foodDao.viewFoods();
+                    foodDao.viewFoods(userId);
                     break;
                 case 3:
-                    updateFood();
+                    updateFood(userId);
                     break;
                 case 4:
-                    deleteFood();
+                    deleteFood(userId);
                     break;
                 case 5:
                     running = false;
@@ -49,21 +49,21 @@ public class FoodController {
         });
     }
 
-    private void addFood() {
+    private void addFood(int userId) {
         ConsoleHelper.header("ADD FOOD");
 
-        if (foodDao.addFood(readFoodDetails())) {
+        if (foodDao.addFood(readFoodDetails(userId))) {
             ConsoleHelper.success("Food added successfully.");
         } else {
             ConsoleHelper.error("Food was not added.");
         }
     }
 
-    private void updateFood() {
+    private void updateFood(int userId) {
         ConsoleHelper.header("UPDATE FOOD");
-        foodDao.viewFoods();
+        foodDao.viewFoods(userId);
         int id = InputHelper.getInt("Enter Food ID to update: ");
-        PetFood food = foodDao.findFoodById(id);
+        PetFood food = foodDao.findFoodById(id, userId);
 
         if (food == null) {
             ConsoleHelper.error("Food not found.");
@@ -85,25 +85,26 @@ public class FoodController {
         }
     }
 
-    private void deleteFood() {
+    private void deleteFood(int userId) {
         ConsoleHelper.header("DELETE FOOD");
-        foodDao.viewFoods();
+        foodDao.viewFoods(userId);
         int id = InputHelper.getInt("Enter Food ID to delete: ");
 
-        if (InputHelper.getConfirmation("Delete this food? (Y/N): ") && foodDao.deleteFood(id)) {
+        if (InputHelper.getConfirmation("Delete this food? (Y/N): ") && foodDao.deleteFood(id, userId)) {
             ConsoleHelper.success("Food deleted successfully.");
         } else {
             ConsoleHelper.info("Delete operation was not completed.");
         }
     }
 
-    private PetFood readFoodDetails() {
+    private PetFood readFoodDetails(int userId) {
         PetFood food = new PetFood();
         food.setFoodName(InputHelper.getString("Food Name: "));
         food.setBrand(InputHelper.getString("Brand: "));
         food.setFoodType(InputHelper.getString("Type: "));
         food.setFlavor(InputHelper.getString("Flavor: "));
         food.setExpirationDate(InputHelper.getDate("Expiration Date (YYYY-MM-DD): "));
+        food.setUserId(userId);
         return food;
     }
 

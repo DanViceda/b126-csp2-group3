@@ -14,13 +14,19 @@ import java.util.List;
 
 public class FeedingScheduleDao {
 
-    public boolean addSchedule(FeedingSchedule schedule) {
-        String sql = "INSERT INTO schedule(pet_id, food_id, feeding_time, quantity, frequency) VALUES (?, ?, ?, ?, ?)";
+    public boolean addSchedule(FeedingSchedule schedule, int userId) {
+        String sql = "INSERT INTO schedule(pet_id, food_id, feeding_time, quantity, frequency) "
+                + "SELECT ?, ?, ?, ?, ? FROM pets p JOIN food f "
+                + "WHERE p.id = ? AND p.user_id = ? AND f.id = ? AND f.user_id = ?";
 
         try (Connection conn = DBConnection.getConnection();
              PreparedStatement pst = conn.prepareStatement(sql)) {
 
             setScheduleValues(pst, schedule);
+            pst.setInt(6, schedule.getPetId());
+            pst.setInt(7, userId);
+            pst.setInt(8, schedule.getFoodId());
+            pst.setInt(9, userId);
             return pst.executeUpdate() > 0;
         } catch (SQLException | NullPointerException e) {
             ConsoleHelper.error("Failed to add schedule: " + e.getMessage());
@@ -33,13 +39,14 @@ public class FeedingScheduleDao {
                 + "FROM schedule s "
                 + "LEFT JOIN pets p ON s.pet_id = p.id "
                 + "LEFT JOIN food f ON s.food_id = f.id "
-                + "WHERE p.user_id = ? ORDER BY s.id";
+                + "WHERE p.user_id = ? AND f.user_id = ? ORDER BY s.id";
         List<String[]> rows = new ArrayList<>();
 
         try (Connection conn = DBConnection.getConnection();
              PreparedStatement pst = conn.prepareStatement(sql)) {
 
             pst.setInt(1, userId);
+            pst.setInt(2, userId);
 
             try (ResultSet rs = pst.executeQuery()) {
                 while (rs.next()) {
@@ -62,13 +69,17 @@ public class FeedingScheduleDao {
     }
 
     public FeedingSchedule findScheduleById(int id, int userId) {
-        String sql = "SELECT s.* FROM schedule s JOIN pets p ON s.pet_id = p.id WHERE s.id = ? AND p.user_id = ?";
+        String sql = "SELECT s.* FROM schedule s "
+                + "JOIN pets p ON s.pet_id = p.id "
+                + "JOIN food f ON s.food_id = f.id "
+                + "WHERE s.id = ? AND p.user_id = ? AND f.user_id = ?";
 
         try (Connection conn = DBConnection.getConnection();
              PreparedStatement pst = conn.prepareStatement(sql)) {
 
             pst.setInt(1, id);
             pst.setInt(2, userId);
+            pst.setInt(3, userId);
 
             try (ResultSet rs = pst.executeQuery()) {
                 if (rs.next()) {
@@ -83,13 +94,17 @@ public class FeedingScheduleDao {
     }
 
     public String getPetNameForSchedule(int scheduleId, int userId) {
-        String sql = "SELECT p.pet_name FROM schedule s JOIN pets p ON s.pet_id = p.id WHERE s.id = ? AND p.user_id = ?";
+        String sql = "SELECT p.pet_name FROM schedule s "
+                + "JOIN pets p ON s.pet_id = p.id "
+                + "JOIN food f ON s.food_id = f.id "
+                + "WHERE s.id = ? AND p.user_id = ? AND f.user_id = ?";
 
         try (Connection conn = DBConnection.getConnection();
              PreparedStatement pst = conn.prepareStatement(sql)) {
 
             pst.setInt(1, scheduleId);
             pst.setInt(2, userId);
+            pst.setInt(3, userId);
 
             try (ResultSet rs = pst.executeQuery()) {
                 if (rs.next()) {
@@ -104,16 +119,26 @@ public class FeedingScheduleDao {
     }
 
     public boolean updateSchedule(FeedingSchedule schedule, int userId) {
-        String sql = "UPDATE schedule s JOIN pets p ON s.pet_id = p.id "
+        String sql = "UPDATE schedule s JOIN pets owner_pet ON s.pet_id = owner_pet.id "
+                + "JOIN pets new_pet ON new_pet.id = ? AND new_pet.user_id = ? "
+                + "JOIN food new_food ON new_food.id = ? AND new_food.user_id = ? "
                 + "SET s.pet_id=?, s.food_id=?, s.feeding_time=?, s.quantity=?, s.frequency=? "
-                + "WHERE s.id=? AND p.user_id=?";
+                + "WHERE s.id=? AND owner_pet.user_id=?";
 
         try (Connection conn = DBConnection.getConnection();
              PreparedStatement pst = conn.prepareStatement(sql)) {
 
-            setScheduleValues(pst, schedule);
-            pst.setInt(6, schedule.getId());
-            pst.setInt(7, userId);
+            pst.setInt(1, schedule.getPetId());
+            pst.setInt(2, userId);
+            pst.setInt(3, schedule.getFoodId());
+            pst.setInt(4, userId);
+            pst.setInt(5, schedule.getPetId());
+            pst.setInt(6, schedule.getFoodId());
+            pst.setString(7, schedule.getFeedingTime());
+            pst.setDouble(8, schedule.getQuantity());
+            pst.setString(9, schedule.getFrequency());
+            pst.setInt(10, schedule.getId());
+            pst.setInt(11, userId);
             return pst.executeUpdate() > 0;
         } catch (SQLException | NullPointerException e) {
             ConsoleHelper.error("Failed to update schedule: " + e.getMessage());
@@ -122,13 +147,17 @@ public class FeedingScheduleDao {
     }
 
     public boolean deleteSchedule(int id, int userId) {
-        String sql = "DELETE s FROM schedule s JOIN pets p ON s.pet_id = p.id WHERE s.id = ? AND p.user_id = ?";
+        String sql = "DELETE s FROM schedule s "
+                + "JOIN pets p ON s.pet_id = p.id "
+                + "JOIN food f ON s.food_id = f.id "
+                + "WHERE s.id = ? AND p.user_id = ? AND f.user_id = ?";
 
         try (Connection conn = DBConnection.getConnection();
              PreparedStatement pst = conn.prepareStatement(sql)) {
 
             pst.setInt(1, id);
             pst.setInt(2, userId);
+            pst.setInt(3, userId);
             return pst.executeUpdate() > 0;
         } catch (SQLException | NullPointerException e) {
             ConsoleHelper.error("Failed to delete schedule: " + e.getMessage());

@@ -17,7 +17,7 @@ public class InventoryController {
     private final FoodInventoryDao inventoryDao = new FoodInventoryDao();
     private final PetFoodDao foodDao = new PetFoodDao();
 
-    public void start() {
+    public void start(int userId) {
         boolean running = true;
 
         while (running) {
@@ -26,19 +26,19 @@ public class InventoryController {
 
             switch (choice) {
                 case 1:
-                    addInventory();
+                    addInventory(userId);
                     break;
                 case 2:
-                    inventoryDao.viewInventory();
+                    inventoryDao.viewInventory(userId);
                     break;
                 case 3:
-                    updateInventory();
+                    updateInventory(userId);
                     break;
                 case 4:
-                    updateStockQuantity();
+                    updateStockQuantity(userId);
                     break;
                 case 5:
-                    deleteInventory();
+                    deleteInventory(userId);
                     break;
                 case 6:
                     running = false;
@@ -61,28 +61,28 @@ public class InventoryController {
         });
     }
 
-    private void addInventory() {
+    private void addInventory(int userId) {
         ConsoleHelper.header("ADD INVENTORY");
 
-        if (inventoryDao.addInventory(readInventoryDetails())) {
+        if (inventoryDao.addInventory(readInventoryDetails(userId), userId)) {
             ConsoleHelper.success("Inventory added successfully.");
         } else {
             ConsoleHelper.error("Inventory was not added.");
         }
     }
 
-    private void updateInventory() {
+    private void updateInventory(int userId) {
         ConsoleHelper.header("UPDATE INVENTORY");
-        inventoryDao.viewInventory();
+        inventoryDao.viewInventory(userId);
         int id = InputHelper.getInt("Enter Inventory ID to update: ");
-        FoodInventory inventory = inventoryDao.findInventoryById(id);
+        FoodInventory inventory = inventoryDao.findInventoryById(id, userId);
 
         if (inventory == null) {
             ConsoleHelper.error("Inventory record not found.");
             return;
         }
 
-        PetFood food = foodDao.findFoodById(inventory.getFoodId());
+        PetFood food = foodDao.findFoodById(inventory.getFoodId(), userId);
 
         if (food == null) {
             ConsoleHelper.error("Linked food item was not found.");
@@ -110,18 +110,18 @@ public class InventoryController {
             return;
         }
 
-        if (inventoryDao.updateInventory(inventory)) {
+        if (inventoryDao.updateInventory(inventory, userId)) {
             ConsoleHelper.success("Inventory updated successfully.");
         } else {
             ConsoleHelper.error("Inventory not found or update failed.");
         }
     }
 
-    private void updateStockQuantity() {
+    private void updateStockQuantity(int userId) {
         ConsoleHelper.header("UPDATE STOCK QUANTITY");
-        inventoryDao.viewInventory();
+        inventoryDao.viewInventory(userId);
         int id = InputHelper.getInt("Enter Inventory ID: ");
-        FoodInventory inventory = inventoryDao.findInventoryById(id);
+        FoodInventory inventory = inventoryDao.findInventoryById(id, userId);
 
         if (inventory == null) {
             ConsoleHelper.error("Inventory record not found.");
@@ -130,27 +130,27 @@ public class InventoryController {
 
         double quantity = getQuantityForUnit(inventory.getUnit());
 
-        if (inventoryDao.updateStockQuantity(id, quantity)) {
+        if (inventoryDao.updateStockQuantity(id, quantity, userId)) {
             ConsoleHelper.success("Stock quantity updated successfully.");
         } else {
             ConsoleHelper.error("Stock quantity update failed.");
         }
     }
 
-    private void deleteInventory() {
+    private void deleteInventory(int userId) {
         ConsoleHelper.header("DELETE INVENTORY");
-        inventoryDao.viewInventory();
+        inventoryDao.viewInventory(userId);
         int id = InputHelper.getInt("Enter Inventory ID to delete: ");
 
-        if (InputHelper.getConfirmation("Delete this inventory record? (Y/N): ") && inventoryDao.deleteInventory(id)) {
+        if (InputHelper.getConfirmation("Delete this inventory record? (Y/N): ") && inventoryDao.deleteInventory(id, userId)) {
             ConsoleHelper.success("Inventory deleted successfully.");
         } else {
             ConsoleHelper.info("Delete operation was not completed.");
         }
     }
 
-    private FoodInventory readInventoryDetails() {
-        foodDao.viewFoods();
+    private FoodInventory readInventoryDetails(int userId) {
+        foodDao.viewFoods(userId);
 
         FoodInventory inventory = new FoodInventory();
         inventory.setFoodId(InputHelper.getInt("Food ID: "));

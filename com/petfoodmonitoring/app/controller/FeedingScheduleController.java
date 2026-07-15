@@ -56,7 +56,7 @@ public class FeedingScheduleController {
     private void addSchedule(int userId) {
         ConsoleHelper.header("ADD FEEDING SCHEDULE");
 
-        if (scheduleDao.addSchedule(readScheduleDetails(userId))) {
+        if (scheduleDao.addSchedule(readScheduleDetails(userId), userId)) {
             ConsoleHelper.success("Schedule added successfully.");
         } else {
             ConsoleHelper.error("Schedule was not added.");
@@ -75,7 +75,7 @@ public class FeedingScheduleController {
         }
 
         petDao.viewPets(userId);
-        foodDao.viewFoods();
+        foodDao.viewFoods(userId);
         System.out.println("\nPress Enter without typing anything to keep the current value.");
 
         System.out.println("Current Pet ID: " + schedule.getPetId());
@@ -119,7 +119,7 @@ public class FeedingScheduleController {
 
     private FeedingSchedule readScheduleDetails(int userId) {
         petDao.viewPets(userId);
-        foodDao.viewFoods();
+        foodDao.viewFoods(userId);
 
         FeedingSchedule schedule = new FeedingSchedule();
         schedule.setPetId(InputHelper.getInt("Pet ID: "));

@@ -21,8 +21,24 @@ public class DatabaseInitializer {
             for (String sql : getTableStatements()) {
                 stmt.execute(sql);
             }
+
+            runMigrations(stmt);
         } catch (SQLException | NullPointerException e) {
             System.out.println("Database initialization skipped. Please check your MySQL connection.");
+        }
+    }
+
+    private static void runMigrations(Statement stmt) {
+        executeMigration(stmt, "ALTER TABLE food ADD COLUMN user_id INT NULL");
+        executeMigration(stmt, "ALTER TABLE food ADD INDEX idx_food_user_id (user_id)");
+        executeMigration(stmt, "ALTER TABLE food ADD CONSTRAINT fk_food_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE ON UPDATE CASCADE");
+    }
+
+    private static void executeMigration(Statement stmt, String sql) {
+        try {
+            stmt.execute(sql);
+        } catch (SQLException e) {
+            // Ignore duplicate column/index/constraint errors so existing databases keep starting normally.
         }
     }
 
@@ -53,7 +69,9 @@ public class DatabaseInitializer {
                     + "brand VARCHAR(100) NOT NULL,"
                     + "`type` VARCHAR(100) NOT NULL,"
                     + "flavor VARCHAR(100) NOT NULL,"
-                    + "expiration_date DATE NOT NULL"
+                    + "expiration_date DATE NOT NULL,"
+                    + "user_id INT NOT NULL,"
+                    + "FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE ON UPDATE CASCADE"
                     + ") ENGINE=InnoDB",
             "CREATE TABLE IF NOT EXISTS inventory ("
                     + "id INT AUTO_INCREMENT PRIMARY KEY,"

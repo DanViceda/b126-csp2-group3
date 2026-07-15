@@ -30,7 +30,11 @@ CREATE TABLE IF NOT EXISTS food (
     brand VARCHAR(100) NOT NULL,
     `type` VARCHAR(100) NOT NULL,
     flavor VARCHAR(100) NOT NULL,
-    expiration_date DATE NOT NULL
+    expiration_date DATE NOT NULL,
+    user_id INT NOT NULL,
+    CONSTRAINT fk_food_user
+        FOREIGN KEY (user_id) REFERENCES users(id)
+        ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB;
 
 CREATE TABLE IF NOT EXISTS inventory (

@@ -31,7 +31,7 @@ public class FeedingHistoryController {
                     historyDao.viewHistory(userId);
                     break;
                 case 2:
-                    feedPet(userId);
+            feedPet(userId);
                     break;
                 case 3:
                     addHistory(userId);
@@ -66,7 +66,7 @@ public class FeedingHistoryController {
             return;
         }
 
-        FoodInventory inventory = inventoryDao.findInventoryByFoodId(schedule.getFoodId());
+        FoodInventory inventory = inventoryDao.findInventoryByFoodId(schedule.getFoodId(), userId);
 
         if (inventory == null) {
             ConsoleHelper.error("No inventory record found for this schedule's food.");
@@ -77,15 +77,15 @@ public class FeedingHistoryController {
         System.out.println("Pet Name: " + petName);
 
         if (isPiecesUnit(inventory.getUnit())) {
-            feedUsingPieces(schedule, inventory);
+            feedUsingPieces(schedule, inventory, userId);
         } else if (isKilogramUnit(inventory.getUnit())) {
-            feedUsingKilograms(schedule, inventory);
+            feedUsingKilograms(schedule, inventory, userId);
         } else {
             ConsoleHelper.error("Unsupported inventory unit: " + inventory.getUnit() + ". Please update the unit to kg or pcs.");
         }
     }
 
-    private void feedUsingKilograms(FeedingSchedule schedule, FoodInventory inventory) {
+    private void feedUsingKilograms(FeedingSchedule schedule, FoodInventory inventory, int userId) {
         double cups = getGreaterThanZeroDouble("Enter Number of Cups: ");
         double kilogramsFed = cups * KILOGRAMS_PER_CUP;
         double currentInventory = inventory.getQuantityAvailable();
@@ -104,11 +104,11 @@ public class FeedingHistoryController {
         }
 
         System.out.println("Remaining: " + String.format("%.2f kg", remainingInventory));
-        saveFeedingTransaction(schedule, inventory, remainingInventory,
+        saveFeedingTransaction(schedule, inventory, remainingInventory, userId,
                 String.format("Fed %.2f cups / %.2f kg", cups, kilogramsFed));
     }
 
-    private void feedUsingPieces(FeedingSchedule schedule, FoodInventory inventory) {
+    private void feedUsingPieces(FeedingSchedule schedule, FoodInventory inventory, int userId) {
         int piecesUsed = getPositivePieces("Enter Number of Pieces Used: ");
         int currentInventory = (int) inventory.getQuantityAvailable();
         int remainingInventory = currentInventory - piecesUsed;
@@ -123,17 +123,17 @@ public class FeedingHistoryController {
         }
 
         System.out.println("Remaining: " + remainingInventory + " pcs");
-        saveFeedingTransaction(schedule, inventory, remainingInventory,
+        saveFeedingTransaction(schedule, inventory, remainingInventory, userId,
                 "Fed " + piecesUsed + " pcs");
     }
 
-    private void saveFeedingTransaction(FeedingSchedule schedule, FoodInventory inventory, double remainingInventory, String remarks) {
+    private void saveFeedingTransaction(FeedingSchedule schedule, FoodInventory inventory, double remainingInventory, int userId, String remarks) {
         if (!InputHelper.getConfirmation("Save this feeding transaction? (Y/N): ")) {
             ConsoleHelper.info("Feeding transaction was cancelled.");
             return;
         }
 
-        if (!inventoryDao.updateStockQuantity(inventory.getId(), remainingInventory)) {
+        if (!inventoryDao.updateStockQuantity(inventory.getId(), remainingInventory, userId)) {
             ConsoleHelper.error("Feeding was not saved because inventory could not be updated.");
             return;
         }
